@@ -124,3 +124,5 @@ The user reported completing signing-secret setup and authorized committing and 
 - User authorized committing and pushing the verified M-02 changes on 2026-09-18; no new release tag requested.
 
 - User authorized publication on 2026-09-18. Preparing v0.4.0 for the additive core index-settings feature and previously unreleased automation repairs. GitHub Tests run 35340100066 passed for b364d06. Release workflow and Registry ingestion must be verified after tag publication.
+
+- User selected v0.3.1 instead of v0.4.0 before any new tag was created or pushed. Release notes corrected accordingly; the earlier local preparation commit is retained in history.
