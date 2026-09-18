@@ -1,0 +1,1 @@
+terraform import meilisearch_index_settings.example INDEX_UID

@@ -37,6 +37,10 @@ func (e *keyAPIError) apiCode() string {
 	return e.code
 }
 
+func (e *keyAPIError) apiStatus() int {
+	return e.status
+}
+
 func (r *keyResource) updateKeyWithContext(ctx context.Context, uid string, name, description *string) (*meilisearch.Key, error) {
 	if r.provider == nil || r.provider.httpClient == nil || r.provider.host == "" {
 		return nil, errors.New("key metadata update client is not configured")

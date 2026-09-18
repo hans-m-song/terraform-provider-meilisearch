@@ -1,5 +1,6 @@
 ## Unreleased
 
+- Add core index-settings resource and data source, field ownership, server-default resets and UID import.
 - Update workflow actions to current Framework scaffolding pins and explicitly select Terraform for documentation generation.
 - Fix disposable acceptance cleanup for read-only Go module caches while preserving test failure status.
 

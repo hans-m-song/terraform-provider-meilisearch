@@ -1,6 +1,6 @@
 # Provider modernization
 
-Research date: 2026-09-18. Status: M-01 implemented and verified; later milestones remain proposed.
+Research date: 2026-09-18. Status: M-01 implemented and verified; M-02 core index settings implemented and verified; remaining milestones proposed.
 
 ## Goal
 
@@ -14,7 +14,7 @@ Modernize the existing Go Terraform Plugin Framework provider and deliver declar
 - Primary integration targets verified on 2026-09-18: Terraform v1.16.3 and Meilisearch v1.53.2; refresh pins before implementation. Older-server compatibility is optional and must not delay current functionality. Sources are recorded in feasibility.md.
 - M-01 is validated against the official Meilisearch v1.53.2 Docker image. Older-server, edition/Cloud, and OpenTofu coverage are unclaimed; later features must establish their own capability gates.
 
-M-01 modernization is complete. Later-feature lifecycle and ownership contracts below remain proposals.
+M-01 modernization is complete. M-02 core settings ownership/import/reset policy is implemented and verified. Other later-feature contracts remain proposals.
 
 ## Existing architecture
 
@@ -49,7 +49,7 @@ Use typed Terraform schemas. Prefer SDK operations; isolate a `net/http` fallbac
 5. Use Terraform actions for ingestion, snapshots, and dumps. They leave durable effects and do not have a normal read/update/delete lifecycle.
 6. Do not promise backup download, off-site storage, scheduling, or restoration through the backup creation API.
 
-The durable-key portion of decision 4 was approved and implemented in M-01. The remaining feature decisions require approval before implementation. Their reasoning and uncertainties are in [feasibility](feasibility.md).
+Decision 1 is approved for M-02's eight core fields: initially omitted/null fields are unmanaged; removal or resource deletion resets previously owned fields through JSON null; UID import adopts supported core fields only. The durable-key portion of decision 4 was implemented in M-01. Other feature decisions require approval. Their reasoning and uncertainties are in [feasibility](feasibility.md).
 
 ## Workflow and gates
 

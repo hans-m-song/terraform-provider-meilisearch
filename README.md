@@ -6,7 +6,7 @@
 
 This Terraform provider implements resource management for Meilisearch.
 
-The modernization changes in this workspace are unreleased. See [the roadmap](docs/roadmap.md) for delivery status and [migration notes](docs/migration.md) for behavior changes. The supported baseline is Terraform 1.14+; newer server API coverage takes priority over legacy resource compatibility.
+Core index-settings changes in this workspace are unreleased. See [the roadmap](docs/roadmap.md) for delivery status and [migration notes](docs/migration.md) for behavior changes. The supported baseline is Terraform 1.14+; newer server API coverage takes priority over legacy resource compatibility.
 
 ## Overview
 
@@ -38,12 +38,20 @@ Use an API key with permissions for the operations you manage. Credentials suppl
 
 - `meilisearch_key`: create and manage API keys for Meilisearch.
 - `meilisearch_index`: create and manage an index in Meilisearch.
+- `meilisearch_index_settings`: manage selected core settings of an existing index.
 
 ### Data sources
 
 - `meilisearch_key`: read API keys for Meilisearch.
 - `meilisearch_index`: read a Meilisearch index.
 - `meilisearch_version`: read the server version.
+- `meilisearch_index_settings`: read supported core index settings.
+
+### Index settings ownership
+
+The approved index-settings contract manages only configured fields. Initially omitted or `null` fields remain unmanaged. Removing a previously managed field sends JSON `null` to reset that field to the server default, then relinquishes ownership. Destroy resets only owned fields and retains the index and documents. Import adopts all eight supported fields; review the configuration before applying because omitted imported fields will reset.
+
+Use one settings resource per index. The initial scope covers searchable, displayed, filterable and sortable attributes, ranking rules, stop words, synonyms and the distinct attribute. Advanced object-based filterable rules are outside the initial typed scope. Implemented and verified on Meilisearch 1.53.2; see [M-02](docs/roadmap.md).
 
 ## Development
 

@@ -7,7 +7,7 @@ Baseline researched 2026-09-18: Meilisearch v1.53.2, Go SDK v0.36.3, Framework v
 | Index metadata | `meilisearch_index` resource/data source | M-01 implemented; UID, optional primary key, timestamps, async completion |
 | API keys | `meilisearch_key` resource/data source | M-01 implemented; set scopes, nullable metadata, optional immutable expiry |
 | Version | `meilisearch_version` data source | M-01 implemented; package-version identity, raw build metadata |
-| Core search settings | `meilisearch_index_settings` | Proposed M-02 |
+| Core search settings | `meilisearch_index_settings` | Implemented M-02; verified on Meilisearch 1.53.2 |
 | Advanced search settings | Same settings owner | Proposed M-03; empty/false/zero/null fidelity required |
 | Mixed filter rules | Typed settings field | SDK dedicated methods support richer types than bulk Settings; verify live round trip |
 | Foreign keys and newest settings | Versioned settings extension | Current API/SDK gap; bounded HTTP fallback or upstream SDK change needed |

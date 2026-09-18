@@ -1,6 +1,6 @@
 # Modernization roadmap
 
-Prepared 2026-09-18. Status: M-01 implemented and verified; later milestones proposed. Confirmed scope: server API only. Confirmed policy: raise the provider-wide Terraform minimum and prioritize current upstream functionality over legacy compatibility. M-01 baseline: Terraform 1.14+. Milestone and task IDs are immutable; removed tasks retain their IDs and a disposition.
+Prepared 2026-09-18. Status: M-01 implemented and verified; M-02 implemented and verified; remaining milestones proposed. Confirmed scope: server API only. Confirmed policy: raise the provider-wide Terraform minimum and prioritize current upstream functionality over legacy compatibility. M-01 baseline: Terraform 1.14+. Milestone and task IDs are immutable; removed tasks retain their IDs and a disposition.
 
 ## Research checklist
 
@@ -130,17 +130,28 @@ Status: complete on 2026-09-18; local checks and GitHub Tests run 35332506179 pa
 
 ## M-02 — Core index settings can be managed declaratively
 
-Status: proposed. Outcome: create an index, configure its search behavior, change settings without replacement, import settings, and reconcile remote drift.
+Status: complete on 2026-09-18; core ownership/import and server-side null-reset contract verified. Outcome: configure an existing index, update settings without replacement, import and reconcile drift.
 
 ### T-04 — Implement core settings resource and read access
+
+Status: complete on 2026-09-18. Initial omission/null is unmanaged; removal resets previously managed fields and relinquishes ownership. Deletion resets owned fields only. UID import adopts the eight supported fields; omitted imported fields reset on apply. Defaults are chosen by server-side JSON null, not hardcoded provider values.
+
+Execution checklist:
+
+- [x] Approve contract and assign implementation/verification boundaries.
+- [x] Freeze settings schema, adapters, lifecycle, tests and examples.
+- [x] Review integration and resolve normalization/unknown-value boundaries.
+- [x] Pass independent unit/lint and live acceptance gates.
+- [x] Generate docs and validate user examples.
+- [x] Complete final source audit and durable handoff.
 
 - Goal/scope: `meilisearch_index_settings` and corresponding data source; searchable/displayed/filterable/sortable attributes, ranking rules, stop words, synonyms, and distinct attribute; existing-index validation and documented ownership.
 - Constraints: one settings owner per index; faithful empty/null/value serialization; resource deletion resets owned fields only; index deletion remains separate; do not silently create an index.
 - Ownership/roles: executor_light owns settings schema/conversion/lifecycle and examples; main agent integrates registration/docs; tester verifies.
 - Dependencies: T-01, T-03.
 - Acceptance: CRUD/import, managed-field reset/removal, out-of-band drift repair, preservation of unmanaged settings, and no-op second plan pass; index documents survive settings-resource deletion.
-- Validation gate: payload tests for omission/null/empty values and live acceptance with documents and long-running settings tasks.
-- Blockers: approval of ownership/import contract; SDK payload fidelity needs validation.
+- Validation gate: exact omission/null/empty payload tests, deterministic task/response deadline recovery, and live lifecycle/import/drift/no-op acceptance with preserved documents. Passed on Terraform 1.14.9/1.16.3 and Meilisearch 1.53.2.
+- Blockers: none for the verified core-settings slice. Advanced object-based filterable rules remain outside the typed contract.
 - Parallel boundary: settings files exclusive; may run alongside flags/webhooks after shared helpers stabilize.
 
 ## M-03 — Extended index settings have explicit coverage

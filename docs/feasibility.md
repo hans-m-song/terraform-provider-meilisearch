@@ -57,21 +57,33 @@ Current stable release targets verified on 2026-09-18: Terraform v1.16.3 and Mei
 
 ## Index settings contract
 
-Proposed `meilisearch_index_settings` identifies an existing index by UID. It does not own the index's lifetime. Require a reference to the index resource when Terraform also creates the index, and preflight existence to avoid accidental index creation by the settings endpoint. Updates should not replace the index.
+Approved M-02 contract: `meilisearch_index_settings` identifies an existing index by UID and does not own its lifetime. Reference the index resource when Terraform also creates it, and preflight existence to avoid accidental creation by the settings endpoint. Updates do not replace the index. Implementation and acceptance verification are complete on Meilisearch 1.53.2.
 
 The API distinguishes omitted fields, explicit null resets, and actual empty/false/zero values. Settings changes may reindex data. [Update all settings](https://www.meilisearch.com/docs/reference/api/settings/update-all-settings).
 
 The SDK's aggregate `Settings` has `omitempty` on slices/maps/scalars, including `FacetSearch bool`, while its filterable-attribute field is string-only despite dedicated methods supporting mixed rules. A direct struct conversion cannot represent every required state. Webhook update maps likewise cannot represent null header removals. Use dedicated SDK methods where faithful; otherwise isolate exact API payloads. [SDK types](https://github.com/meilisearch/meilisearch-go/blob/v0.36.3/types.go), [SDK API interfaces](https://github.com/meilisearch/meilisearch-go/blob/v0.36.3/meilisearch_interface.go), [advanced filterable attributes](https://www.meilisearch.com/docs/reference/api/settings/update-filterableattributes).
 
-Recommended ownership policy to approve:
+Core ownership policy approved on 2026-09-18:
 
 - Initially omitted field: unmanaged; preserve server value.
 - Configured field: compare and reconcile drift.
 - Previously managed field removed from configuration: reset that field, then relinquish ownership.
 - Resource deletion: reset only fields it owns, never delete the index; skip reset if the parent index is already absent.
-- Import: adopt the supported field scope through a documented configuration-generation/import workflow. Do not silently assume ownership of unknown server fields.
+- Import: adopt the eight supported core fields through UID import; align configuration with the desired imported values before applying. Omitted imported fields reset on apply. Settings outside this scope remain unmanaged; advanced object-based filterable rules cause a diagnostic when importing or reading an owned filterable field, without changing the server.
 
-Persist managed-field ownership explicitly if Terraform state alone cannot distinguish omission from previously managed values. Ordered fields such as ranking/searchable attributes remain lists. Choose sets only where server semantics establish order is irrelevant. Test normalized responses and a no-op second plan.
+Resets use explicit JSON null for the individual fields in a settings PATCH. The server selects its own defaults; the provider does not hardcode them or call reset-all for resource deletion. Omission preserves the current server value. Empty lists/maps are sent as `[]`/`{}` rather than null; their semantics are field-specific. In v1.53.2, empty stop-word and synonym settings reset internally and GET returns empty values. [Settings PATCH semantics](https://www.meilisearch.com/docs/reference/api/settings/update-all-settings), [versioned settings implementation](https://github.com/meilisearch/meilisearch/blob/v1.53.2/crates/milli/src/update/settings.rs).
+
+Concurrency limitation: the API can create a missing index during settings PATCH. Preflight rejects an already-missing index, but a separate GET/PATCH cannot provide an atomic guarantee against concurrent or queued deletion. Meilisearch 1.53.2 derives implicit-creation permission from `indexes.create`; use a separate provider alias with a UID-scoped key granting `indexes.get`, `settings.get`, `settings.update` and `tasks.get`, excluding `indexes.create`, to prohibit that creation. A synthetic live probe confirmed a failed `index_not_found` task with the index still absent. Concurrent external deletion/recreation remains outside an atomic provider guarantee. [Settings route](https://github.com/meilisearch/meilisearch/blob/v1.53.2/crates/meilisearch/src/routes/indexes/settings.rs), [authorization filters](https://github.com/meilisearch/meilisearch/blob/v1.53.2/crates/meilisearch-auth/src/lib.rs).
+
+Verified 1.53.2 normalization: stop words undergo compatibility decomposition (NFKD), preserving case; configured spelling may be retained only when equivalently normalized sets match the server. Synonyms persist raw keys/list order/duplicates. Searchable/displayed lists deduplicate first occurrences and collapse any wildcard list to ["*"]. Provider input validation rejects those redundant ordered-list forms to keep plans consistent. [Settings update implementation](https://github.com/meilisearch/meilisearch/blob/v1.53.2/crates/milli/src/update/settings.rs). These behaviors were also confirmed with disposable synthetic server probes; full provider acceptance passed on Terraform 1.14.9 and 1.16.3.
+
+Before a PATCH changing filterable attributes, the provider reads the remote settings and rejects unsupported object-based rules without mutation; this read and PATCH are separate requests, so concurrent external changes cannot be excluded. [Provider mutation guard](../internal/provider/index_settings_resource.go).
+
+Versioned Charabia source establishes additional non-lossy stop-word transformations: non-whitespace controls are removed, Persian character/digit/punctuation mappings apply globally to strings, and Swedish recomposition remains NFKD-equivalent. The adapter uses one comparison key for these transformations in drift comparison, spelling retention and duplicate validation; it does not lowercase or strip diacritics. Live acceptance verified case/diacritic preservation, Persian kaf/digits, control removal and Swedish recomposition with stable repeated plans. [String normalizer pipeline](https://github.com/meilisearch/charabia/blob/bc63b9860434f06cf78b51bb0eab00aaefb69f15/charabia/src/normalizer/mod.rs#L284-L300), [control normalization](https://github.com/meilisearch/charabia/blob/bc63b9860434f06cf78b51bb0eab00aaefb69f15/charabia/src/normalizer/control_char.rs), [Persian normalization](https://github.com/meilisearch/charabia/blob/bc63b9860434f06cf78b51bb0eab00aaefb69f15/charabia/src/normalizer/persian.rs).
+
+Settings API responses are bounded to 1 MiB, so larger aggregate settings responses return an error.
+
+The implemented managed_fields set records ownership independently of nullable values. Ordered fields such as ranking/searchable attributes remain lists. Choose sets only where server semantics establish order is irrelevant. Test normalized responses and a no-op second plan.
 
 First slice: searchable/displayed/filterable/sortable attributes, ranking rules, stop words, synonyms, distinct attribute. Next: typo tolerance, pagination, faceting, tokenization, proximity precision, cutoff, localized attributes, prefix/facet search, and advanced filter rules. Then assess embedders/chat and newer server fields against a versioned coverage ledger.
 

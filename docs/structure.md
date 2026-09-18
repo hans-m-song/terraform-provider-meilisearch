@@ -1,6 +1,6 @@
 # Structure and ownership
 
-Verified 2026-09-18; M-01 changes are implemented. Later-feature paths in the proposed table do not yet exist.
+Verified 2026-09-18; M-01 changes are implemented and M-02 index settings are implemented and verified. Other later-feature paths in the proposed table do not yet exist.
 
 ## Existing layout
 
@@ -10,6 +10,11 @@ go.mod / go.sum                 Go dependencies
 internal/provider/
   provider.go                   schema, SDK setup, registration
   index_resource.go             index lifecycle and import
+  index_settings_resource.go    settings ownership, lifecycle, and import
+  index_settings_model.go       settings schema values and conversion
+  index_settings_schema.go      settings attributes and validation
+  index_settings_normalization.go stop-word comparison keys
+  index_settings_api.go         exact settings PATCH/GET transport
   key_resource.go               durable API-key lifecycle and import
   operations.go                 operation deadlines, safe errors, task completion
   key_api.go                    nullable key metadata PATCH adapter

@@ -2,43 +2,38 @@
 
 Updated 2026-09-18.
 
-T-17 is complete: source commit a488c6c was pushed, and GitHub Tests run 35332506179 passed build/lint/unit/vet/generation and acceptance/cleanup on Terraform 1.14.9/1.16.3. Independent mocked cleanup/shared-cache cases and local full acceptance also passed. The v0.3.0 tag remains at 1986202. The original tagged Tests run failed cleanup after successful tests; its Release run completed successfully. Registry publication remains unverified; no follow-up release tag was created.
+M-01 modernization, T-17 automation repair and M-02/T-04 core index settings are implemented and verified. The user authorized committing and pushing the verified M-02 source, tests, examples and documentation on 2026-09-18. No new release tag was requested.
 
-## Completed
+## Completed core settings
 
-Investigation and M-01 are implemented and verified. Later milestones remain proposed. Confirmed policy: server API only; Terraform minimum raised provider-wide; upstream correctness takes priority over legacy compatibility. Commit and push were authorized on 2026-09-18; release tagging and provider publication remain outside that authorization. The authorized M-01 Discord notification command completed successfully.
+Resource and data source: meilisearch_index_settings. Eight fields: searchable/displayed/filterable/sortable attributes, ranking rules, stop words, synonyms and distinct attribute. Ordered fields retain list order; membership fields use sets; synonyms retain raw spelling/order/duplicates.
 
-Dependency pins: Framework 1.19.0, plugin-go 0.31.0, plugin-log 0.11.0, plugin-testing 1.16.0, plugin-docs 0.25.0, Meilisearch Go SDK 0.36.3. Build requires Go 1.25.8; preferred toolchain is 1.27.1. Supported Terraform baseline is 1.14+.
+Initial omission/null is unmanaged. managed_fields records ownership independently of nullable values. Removing a previously owned field sends JSON null, selects the server default and relinquishes ownership. Destroy resets only owned fields, preserving the index and documents. UID import adopts all eight fields, including nullable distinct_attribute; omitted imported configuration fields reset on apply.
 
-Implemented: validated host/API-key/operation-timeout configuration; private shared client data; cancellable reads and task waits; safe diagnostics; remote UID/version IDs; RFC3339 index/key dates; sensitive key data-source credentials; unordered key scopes; optional primary keys with non-destructive empty-index updates; nullable metadata PATCH; optional immutable expiry whose removal requires replacement. The destructive clean target is removed; acceptance uses a portable disposable-server harness.
+Exact bounded GET/PATCH transport avoids SDK omitempty limitations. Operations preflight parent existence, wait for asynchronous tasks, sanitize diagnostics and retain pending identity/ownership on accepted-response/task failures. Unknown planning values remain unresolved until apply. Stop-word comparison/validation follows the pinned non-lossy Charabia pipeline and retains equivalent configured spelling.
 
 ## Verification
 
-- T-15 passed independent YAML parsing, configured lint, GoReleaser check, harness syntax/help and diff checks. T-16 regenerated docs and passed Terraform 1.15.8 example validation against a freshly built local provider at `hans-m-song/meilisearch`. Independent audit confirmed ownership references, including CODEOWNERS. State address migration is documented, not executed against user state.
+Independent provider unit tests, go vet ./..., go build ./..., configured golangci-lint, final source audit and diff checks passed. Generated Registry docs and combined resource/data-source examples passed Terraform 1.15.8 validation using a freshly built local provider and disposable development overrides.
 
-- Full acceptance passed on Terraform 1.14.9 and 1.16.3 with official Meilisearch v1.53.2 on port 17700. Terraform binaries were checked against official SHA256 sums. Earlier index/key tests also passed on installed Terraform 1.15.8 before the final expiry refinement.
-- Live tests cover CRUD/import, metadata removal/no-op, expiry removal/replacement/no-op, and version reads. Deterministic real-SDK HTTP tests cover cancellation, partial-create identity, failed/canceled tasks, populated-index rejection with zero mutations, and missing-index reconciliation.
-- Unit tests, vet, build, explicit no-config lint, documentation generation, and diff checks passed. The provider example also passed Terraform 1.15.8 validation against a freshly built local provider using temporary development overrides.
-- Independent acceptance logs remain at `/Volumes/Data/tmp/t03-m01-acceptance-1.14.9.log` and `/Volumes/Data/tmp/t03-m01-acceptance-1.16.3.log`. Generated state, temporary CLIs, example directories, and test containers were removed.
+Full ^TestAcc passed on Terraform 1.14.9 and 1.16.3 against disposable Meilisearch 1.53.2. Official Terraform archive SHA256 sums were verified. The final matrix used an isolated source/harness copy with only the test host and harness port changed from 17700 to 17702; production code was unchanged. The unconfirmed existing container on port 17700 was neither stopped nor reused.
 
-Final source audit found no production defect and identified an omitted-primary-key resource coverage boundary. The added targeted create/no-op/import test subsequently passed on both Terraform 1.14.9 and 1.16.3 with null primary-key state preserved. No production changes were needed. All runtime gates are closed.
+Final acceptance logs: /Volumes/Data/tmp/t04-final5-acceptance-1.14.9.log and /Volumes/Data/tmp/t04-final5-acceptance-1.16.3.log. The earlier lifecycle failure was a fixture nil-client capture masked by an unconditional destroy assertion; both fixture issues were repaired before these passing runs.
 
-## Pending decisions
+## Baseline and publication
 
-1. Approve M-02 index-settings ownership/import/reset rules before implementation.
-2. Approve later runtime-flag, webhook-secret, ephemeral-key, and action contracts in their feature tasks.
-3. Establish later-feature server/edition capability gates; older-server and OpenTofu coverage remain unclaimed.
-4. T-15 CI/release repairs and T-16 namespace migration are complete. GitHub execution, signing, publication and development Compose/data migration remain separate.
+Framework 1.19.0, plugin-go 0.31.0, plugin-log 0.11.0, plugin-testing 1.16.0, plugin-docs 0.25.0 and Meilisearch Go SDK 0.36.3. Build requires Go 1.25.8; preferred toolchain 1.27.1. Terraform minimum is provider-wide 1.14+, with upstream correctness prioritized over legacy compatibility.
 
-## Resume sequence
+GitHub/Registry namespace is hans-m-song/meilisearch. M-01 commit 1986202 was pushed and tagged v0.3.0; the tag remains there. Its Release workflow succeeded, while the original tagged Tests run failed cleanup after tests passed. T-17 repair commit a488c6c and documentation checkpoint 0441007 were subsequently pushed; Tests run 35332506179 passed all jobs including acceptance cleanup. Registry publication remains unverified; no follow-up release tag was created.
 
-- Read feasibility.md and roadmap.md; reverify upstream versions if resuming later.
-- Read migration.md for deliberate breaks and current limitations. M-01/T-01/T-02/T-03 are complete for the documented local runtime/toolchain contract.
-- M-02/T-04 is the next proposed slice; do not start provider code without confirmation.
-- Use the disposable acceptance harness, never an existing server or existing state. Repository configuration inspection is authorized and complete; preserve existing development data.
-- Follow the user-specified delegation capsules/roles for implementation; coordinate shared dependency/registration boundaries.
-- Keep tasks proposed until approved, then update progress and verified evidence as work proceeds.
+## Next decisions
 
-## Limits
+Read overview.md, roadmap.md, feasibility.md, api-coverage.md and migration.md before resuming. M-03 extended index settings is the next proposed slice; approve its field/lifecycle and server capability boundaries before implementation. Server API instance settings, webhooks, optional ephemeral keys and actions remain later proposed milestones. Server API only; Cloud provisioning/startup configuration are excluded.
 
-Automatic legacy-state conversion was not tested; UID re-import is the documented recovery path. Expiry comparison is literal: imports returning UTC must use matching UTC configuration spelling; timezone-insensitive imports are unclaimed and require release review. Managed keys/data sources persist credentials in state despite sensitivity. Only Meilisearch 1.53.2 is validated; future settings/webhook/action APIs require their own capability verification. Planning documents live under docs/ because .agents is declared read-only in the supplied filesystem profile.
+## Limits and workflow
+
+Only Meilisearch 1.53.2 is validated; older/newer servers and OpenTofu are unclaimed. Core filterable_attributes is string-only. Unsupported advanced object rules are diagnosed without mutation when owned/imported/read through the data source; pre-PATCH guards protect Create/Update/Delete. GET/PATCH are separate requests, so concurrent external mutations/deletion cannot be excluded. A UID-scoped settings key without indexes.create prevents implicit creation during a concurrent parent deletion. Settings responses are bounded to 1 MiB.
+
+Legacy state conversion and timezone-insensitive key expiry imports remain unverified. Credentials persist in Terraform state despite sensitivity. Use only disposable acceptance servers/state, preserve existing development data, and follow security restrictions on secrets/environment/PII. docs/log.md and this file are main-agent-owned durable records because .agents is read-only. Later code changes require a plan and approval; release/commit/push actions need authorization for that work.
+
+Disposable final matrix source copy, provider binary, CLI staging, server/container and generated state were removed; verification logs remain at the paths above.

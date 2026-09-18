@@ -13,6 +13,12 @@ const defaultOperationTimeout = 5 * time.Minute
 
 const operationPollInterval = 500 * time.Millisecond
 
+type codedAPIError interface {
+	error
+	apiCode() string
+	apiStatus() int
+}
+
 func operationContext(ctx context.Context, timeout time.Duration) (context.Context, context.CancelFunc) {
 	if timeout <= 0 {
 		timeout = defaultOperationTimeout
@@ -35,13 +41,13 @@ func apiError(err error) string {
 		return taskError.Error()
 	}
 
-	var keyError *keyAPIError
-	if errors.As(err, &keyError) {
-		if keyError.code != "" && keyError.status > 0 {
-			return fmt.Sprintf("Meilisearch API error %q (HTTP status %d)", keyError.code, keyError.status)
+	var codedError codedAPIError
+	if errors.As(err, &codedError) {
+		if codedError.apiCode() != "" && codedError.apiStatus() > 0 {
+			return fmt.Sprintf("Meilisearch API error %q (HTTP status %d)", codedError.apiCode(), codedError.apiStatus())
 		}
-		if keyError.status > 0 {
-			return fmt.Sprintf("Meilisearch API error (HTTP status %d)", keyError.status)
+		if codedError.apiStatus() > 0 {
+			return fmt.Sprintf("Meilisearch API error (HTTP status %d)", codedError.apiStatus())
 		}
 		return "Meilisearch API error"
 	}
@@ -95,8 +101,8 @@ func isAPIError(err error, code string) bool {
 		return taskError.code == code
 	}
 
-	var keyError *keyAPIError
-	return errors.As(err, &keyError) && keyError.apiCode() == code
+	var codedError codedAPIError
+	return errors.As(err, &codedError) && codedError.apiCode() == code
 }
 
 func waitTask(ctx context.Context, taskReader meilisearch.TaskReader, taskUID int64) (*meilisearch.Task, error) {

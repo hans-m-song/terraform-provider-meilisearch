@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -13,6 +14,32 @@ import (
 
 type taskReaderStub struct {
 	wait func(context.Context, int64, time.Duration) (*meilisearch.Task, error)
+}
+
+type diagnosticAPIErrorStub struct{}
+
+func (diagnosticAPIErrorStub) Error() string {
+	return "raw private request body"
+}
+
+func (diagnosticAPIErrorStub) apiCode() string {
+	return "index_not_found"
+}
+
+func (diagnosticAPIErrorStub) apiStatus() int {
+	return 404
+}
+
+func TestAPIAdapterErrorDiagnostics(t *testing.T) {
+	err := fmt.Errorf("adapter response: %w", diagnosticAPIErrorStub{})
+
+	if got := apiError(err); got != `Meilisearch API error "index_not_found" (HTTP status 404)` {
+		t.Fatalf("unexpected sanitized diagnostic: %s", got)
+	}
+
+	if !isAPIError(err, "index_not_found") || isAPIError(err, "invalid_settings") {
+		t.Fatal("adapter error classification did not preserve its code")
+	}
 }
 
 func (s taskReaderStub) GetTask(int64) (*meilisearch.Task, error) {

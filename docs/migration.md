@@ -1,6 +1,14 @@
-# M-01 migration notes
+# Provider migration and adoption notes
 
-These modernization changes are included in the v0.3.0 tag pushed on 2026-09-18. Upstream correctness takes priority over legacy compatibility. The release workflow completed successfully; Terraform Registry publication remains unverified. Verification evidence and completion status are in [roadmap](roadmap.md).
+The M-01 modernization changes are included in the v0.3.0 tag pushed on 2026-09-18. Core index settings are unreleased. Upstream correctness takes priority over legacy compatibility. The release workflow completed successfully; Terraform Registry publication remains unverified. Verification evidence and completion status are in [roadmap](roadmap.md).
+
+## Core index settings adoption
+
+`meilisearch_index_settings` binds to an existing index UID. Initially omitted or null fields remain unmanaged and appear as null in resource state; the matching data source reads server values. `managed_fields` records ownership independently of values. Removing a managed field sends JSON null to select the server default, then relinquishes ownership. Destroy resets only owned fields and retains the index and documents.
+
+UID import adopts all eight supported fields. Review configuration before the first apply: omitted imported fields reset, including a null distinct attribute whose ownership was recorded during import. Advanced object-based filterable rules cause a diagnostic when owned or read through the data source; unrelated advanced settings remain untouched.
+
+Use one settings resource per index. Preflight GET and PATCH are separate operations; use a settings-scoped provider alias whose key excludes `indexes.create` to prevent implicit creation during concurrent deletion. Required actions are `indexes.get`, `settings.get`, `settings.update` and `tasks.get`. See [the verified API boundary](feasibility.md).
 
 ## Runtime and build baseline
 
