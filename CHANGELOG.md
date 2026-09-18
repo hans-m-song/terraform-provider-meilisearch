@@ -1,5 +1,10 @@
 ## Unreleased
 
+- Update workflow actions to current Framework scaffolding pins and explicitly select Terraform for documentation generation.
+- Fix disposable acceptance cleanup for read-only Go module caches while preserving test failure status.
+
+## 0.3.0
+
 - Change GitHub links and the Terraform provider namespace to `hans-m-song`; existing state bindings require provider-address migration.
 - Align CI with the supported Terraform matrix and disposable acceptance harness; update GoReleaser archive configuration.
 
@@ -14,7 +19,7 @@
 - Preserve server-reported unavailable version build metadata as `unknown`.
 - Replace destructive shared acceptance-test cleanup with a disposable, isolated test harness.
 
-See docs/migration.md for deliberate behavior changes. This entry describes unreleased workspace changes; verification status is recorded in docs/roadmap.md.
+See docs/migration.md for deliberate behavior changes. The v0.3.0 tag was pushed on 2026-09-18; verification status is recorded in docs/roadmap.md.
 
 ## 0.0.1
 

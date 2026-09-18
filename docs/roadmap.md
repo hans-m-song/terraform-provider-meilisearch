@@ -114,6 +114,20 @@ Status: complete on 2026-09-18; confirmed namespace applied, including CODEOWNER
 - Blockers: none for repository references; remote transfer/publication were not performed.
 - Parallel boundaries: README.md, main.go, examples/provider/provider.tf, .github/CODEOWNERS and docs; separate from T-15 configuration files.
 
+### T-17 — Update upstream actions and repair isolated-cache cleanup
+
+Status: complete for local verification on 2026-09-18; approved action updates and cleanup repair passed independent checks and live acceptance.
+
+- Goal/scope: update both workflows to verified upstream action SHA pins; explicitly install Terraform for generation; repair harness-owned read-only cache cleanup.
+- Constraints: retain CLI matrix/lint pin/signing references; never modify shared caches or move v0.3.0; commit/push authorized, new release tags excluded.
+- Ownership/roles: executor_light owns workflows and harness; main owns durable docs/integration; tester verifies cleanup and configuration independently.
+- Dependencies: T-15/T-16 and the observed successful acceptance tests followed by cleanup failure.
+- Acceptance: successful tests produce a successful harness exit; failed tests retain their failure status; isolated temporary data is removed; shared caches remain untouched.
+- Verification gates: shell/YAML checks, deterministic harness success/failure checks, local acceptance and independent audit.
+- Verification evidence: independent YAML/pin/signing-reference checks, mocked full harness and read-only cleanup exit-status tests passed; full live acceptance passed on Terraform 1.15.8/Meilisearch 1.53.2 with default owned caches, exit zero and no remnants. Source audit clean.
+- Blockers: none for commit/push; remote workflow outcome is checked after push, Registry publication remains unverified.
+- Parallel boundaries: workflows and scripts/test-acceptance.sh exclusively owned by executor; docs owned by main.
+
 ## M-02 — Core index settings can be managed declaratively
 
 Status: proposed. Outcome: create an index, configure its search behavior, change settings without replacement, import settings, and reconcile remote drift.

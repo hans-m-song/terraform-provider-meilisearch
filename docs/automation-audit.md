@@ -25,3 +25,11 @@ GoReleaser's replacement is `formats: ["zip"]`. [Official deprecation notice](ht
 Acceptance: configured lint and release validation pass; CI uses the same reproducible CLI/server matrix and isolated harness as local verification; existing development data is preserved. Workflow execution on GitHub, release signing, and the complete cross-platform artifact matrix remain separate verification gates.
 
 T-15 was approved and completed on 2026-09-18. Independent YAML parsing, configured lint (zero issues), GoReleaser validation, harness syntax/help and diff checks passed. CI now uses the pinned CLI matrix and disposable harness; action SHAs and signing references are retained. GitHub execution, signing and artifact builds were not performed. Development Compose/data migration remains separate.
+
+## Follow-up after first tagged run
+
+On 2026-09-18, [Tests run 35330492474](https://github.com/hans-m-song/terraform-provider-meilisearch/actions/runs/35330492474) passed build/lint/generation and both acceptance suites, then failed harness cleanup on read-only Go module-cache directories. The previous local runs used external writable cache roots and did not exercise this boundary. [Release run 35330492505](https://github.com/hans-m-song/terraform-provider-meilisearch/actions/runs/35330492505) completed successfully; Registry publication remains unverified.
+
+Approved T-17 updates action pins from HashiCorp's current [test](https://github.com/hashicorp/terraform-provider-scaffolding-framework/blob/main/.github/workflows/test.yml) and [release](https://github.com/hashicorp/terraform-provider-scaffolding-framework/blob/main/.github/workflows/release.yml) templates and adds explicit Terraform setup for generation. It retains this provider's verified CLI matrix and lint binary pin. Harness cleanup repair is separate: upstream does not use this disposable-server harness. Go's module cache is read-only by default. [Go module-cache reference](https://go.dev/ref/mod#module-cache).
+
+T-17 local verification passed: independent workflow checks and mocked harness success/failure/cache-preservation cases; real full acceptance on Terraform 1.15.8/Meilisearch 1.53.2 with fresh owned caches; no leftover container or temporary acceptance directory. The tag remains unchanged. Remote execution of updated actions is checked after the authorized follow-up push.

@@ -87,17 +87,33 @@ go_cache="${GOCACHE:-$temp_root/go-cache}"
 go_mod_cache="${GOMODCACHE:-$temp_root/go-modcache}"
 
 cleanup() {
-	status=$?
+	local status=$?
+	local cleanup_status=0
+
+	trap - EXIT INT TERM
+
 	if [[ -n "$container_name" ]]; then
 		docker rm --force "$container_name" >/dev/null 2>&1 || true
 	fi
 	if [[ -n "$temp_root" ]]; then
-		rm -f -R "$temp_root"
+		if ! chmod -R u+w "$temp_root"; then
+			echo "failed to make acceptance test temporary directory writable: $temp_root" >&2
+			cleanup_status=1
+		fi
+		if ! rm -f -R "$temp_root"; then
+			echo "failed to clean up acceptance test temporary directory: $temp_root" >&2
+			cleanup_status=1
+		fi
+	fi
+	if ((status == 0 && cleanup_status != 0)); then
+		status=$cleanup_status
 	fi
 	exit "$status"
 }
 
-trap cleanup EXIT INT TERM
+trap cleanup EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
 
 : > "$temp_root/terraform.tfrc"
 cd -- "$repo_root"

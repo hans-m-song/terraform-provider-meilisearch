@@ -1,6 +1,6 @@
 # M-01 migration notes
 
-These changes are unreleased. Modernization was authorized on 2026-09-18, with upstream correctness prioritized over legacy compatibility. Verification evidence and completion status are in [roadmap](roadmap.md).
+These modernization changes are included in the v0.3.0 tag pushed on 2026-09-18. Upstream correctness takes priority over legacy compatibility. The release workflow completed successfully; Terraform Registry publication remains unverified. Verification evidence and completion status are in [roadmap](roadmap.md).
 
 ## Runtime and build baseline
 

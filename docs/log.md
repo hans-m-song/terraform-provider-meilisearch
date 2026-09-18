@@ -70,4 +70,12 @@ The user confirmed `hans-m-song` for both GitHub references and the Terraform Re
 
 ## 2026-09-18 — Commit and push authorized
 
+Commit 1986202 was pushed to main and the approved v0.3.0 tag was pushed. The tag's Tests run passed both acceptance suites but failed cleanup of read-only module-cache directories. On 2026-09-18 the user approved T-17: upstream action updates, explicit Terraform setup for generation, cleanup repair, verification and commit/push. The release tag remains unchanged.
+
+The original Release run 35330492505 subsequently reported success. Registry publication was not checked. Verified upstream action manifests use Node 24 and retain the needed configuration inputs; both workflows are being updated to the scaffolding repository's current SHA pins.
+
+T-17's full local acceptance suite passed on installed Terraform 1.15.8 with Meilisearch 1.53.2 and GOCACHE/GOMODCACHE explicitly unset. The harness downloaded into its own cache, exited zero after cleanup, and left no acceptance temporary directory or container. The v0.3.0 commit target remains 1986202. Independent failure/shared-cache verification is pending.
+
+Independent T-17 verification subsequently passed workflow YAML/pins/signing references, full mocked harness success and failure (exit 23 retained), shared-cache preservation, read-only cleanup (0/7 retained) and injected cleanup failure diagnostics. Main additionally verified cleanup failure maps success to exit 1 while retaining exit 7. The independent final scope audit found no defect. Verification artifacts are isolated under /Volumes/Data/tmp/t17-workflow-verification. The approved follow-up is ready for commit/push; remote CI outcome is checked afterward.
+
 The user reported completing signing-secret setup and authorized committing and pushing the verified workspace changes. Secret values were not inspected. Release tagging and provider publication were not requested. The pre-commit worktree inventory contains the intended source, test, documentation and automation files; no exported private-key file appears in that inventory.

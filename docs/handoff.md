@@ -2,6 +2,8 @@
 
 Updated 2026-09-18.
 
+T-17 is locally verified: upstream action updates and isolated-cache cleanup repair passed independent YAML/pin/signing-reference checks, mocked success/failure/shared-cache checks and a live full acceptance run with default owned caches. Commit/push is authorized; check the follow-up GitHub Tests run after push. Commit 1986202 and v0.3.0 are already pushed; keep the tag unchanged. The original Tests run passed both suites before cleanup failed; the original Release run completed successfully. Registry publication is unverified.
+
 ## Completed
 
 Investigation and M-01 are implemented and verified. Later milestones remain proposed. Confirmed policy: server API only; Terraform minimum raised provider-wide; upstream correctness takes priority over legacy compatibility. Commit and push were authorized on 2026-09-18; release tagging and provider publication remain outside that authorization. The authorized M-01 Discord notification command completed successfully.
