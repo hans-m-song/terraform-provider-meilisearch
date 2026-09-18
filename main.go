@@ -28,8 +28,7 @@ func main() {
 	flag.Parse()
 
 	opts := providerserver.ServeOpts{
-		// TODO: Update this string with the published name of your provider.
-		Address: "hashicorp.com/edu/meilisearch",
+		Address: "registry.terraform.io/hans-m-song/meilisearch",
 		Debug:   debug,
 	}
 

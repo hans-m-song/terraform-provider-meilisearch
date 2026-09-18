@@ -29,26 +29,28 @@ resource "meilisearch_key" "example" {
 
 ### Required
 
-- `actions` (List of String) Actions permitted for the key.
-- `indexes` (List of String) Indexes the key is authorized to act on (with the actions specified in the scope of the key).
+- `actions` (Set of String) Actions permitted for the key.
+- `indexes` (Set of String) Indexes the key is authorized to act on.
 
 ### Optional
 
 - `description` (String) Description of the key.
-- `expires_at` (String) Date and time when the key will expire (RFC3339)
+- `expires_at` (String) Optional expiration timestamp (RFC3339). Removing it recreates the key without an expiration.
 - `name` (String) Name of the key.
-- `uid` (String) UID (uuid v4) used by Meilisearch to identify the key.
+- `uid` (String) UID used by Meilisearch to identify the key.
 
 ### Read-Only
 
-- `created_at` (String) Date and time when the key was created (RFC3339)
-- `id` (String) Placeholder identifier attribute.
+- `created_at` (String) Date and time when the key was created (RFC3339).
+- `id` (String) Remote API key UID.
 - `key` (String, Sensitive) Actual key value.
-- `updated_at` (String) Date and time when the key was last updated (RFC3339)
+- `updated_at` (String) Date and time when the key was last updated (RFC3339).
 
 ## Import
 
 Import is supported using the following syntax:
+
+The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
 
 ```shell
 # Keys can be imported by specifying the UID used by Meilisearch.

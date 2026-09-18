@@ -22,7 +22,7 @@ data "meilisearch_version" "example" {}
 
 ### Read-Only
 
-- `commit_date` (String) Date when the commitSha was created
+- `commit_date` (String) Commit date reported by the server build, or unknown when unavailable.
 - `commit_sha` (String) Commit identifier that tagged the pkgVersion release
-- `id` (String) Placeholder identifier attribute.
+- `id` (String) Meilisearch package version.
 - `pkg_version` (String) Meilisearch version

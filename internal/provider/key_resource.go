@@ -2,62 +2,60 @@ package provider
 
 import (
 	"context"
-	"strings"
+	"errors"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/meilisearch/meilisearch-go"
 )
 
-// Ensure the implementation satisfies the expected interfaces.
 var (
 	_ resource.Resource                = &keyResource{}
 	_ resource.ResourceWithConfigure   = &keyResource{}
 	_ resource.ResourceWithImportState = &keyResource{}
 )
 
-// NewKeyResource is a helper function to simplify the provider implementation.
 func NewKeyResource() resource.Resource {
 	return &keyResource{}
 }
 
-// keyResource is the resource implementation.
 type keyResource struct {
-	client meilisearch.ServiceManager
+	client           meilisearch.ServiceManager
+	operationTimeout time.Duration
+	provider         *providerData
 }
 
 type keyResourceModel struct {
-	UID         types.String   `tfsdk:"uid"`
-	Name        types.String   `tfsdk:"name"`
-	Description types.String   `tfsdk:"description"`
-	Key         types.String   `tfsdk:"key"`
-	Actions     []types.String `tfsdk:"actions"`
-	Indexes     []types.String `tfsdk:"indexes"`
-	ExpiresAt   types.String   `tfsdk:"expires_at"`
-	CreatedAt   types.String   `tfsdk:"created_at"`
-	UpdatedAt   types.String   `tfsdk:"updated_at"`
-	ID          types.String   `tfsdk:"id"`
+	UID         types.String `tfsdk:"uid"`
+	Name        types.String `tfsdk:"name"`
+	Description types.String `tfsdk:"description"`
+	Key         types.String `tfsdk:"key"`
+	Actions     types.Set    `tfsdk:"actions"`
+	Indexes     types.Set    `tfsdk:"indexes"`
+	ExpiresAt   types.String `tfsdk:"expires_at"`
+	CreatedAt   types.String `tfsdk:"created_at"`
+	UpdatedAt   types.String `tfsdk:"updated_at"`
+	ID          types.String `tfsdk:"id"`
 }
 
-// Metadata returns the resource type name.
 func (r *keyResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
 	resp.TypeName = req.ProviderTypeName + "_key"
 }
 
-// Schema defines the schema for the resource.
 func (r *keyResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Description: "Manages a Meilisearch API key.",
 		Attributes: map[string]schema.Attribute{
 			"uid": schema.StringAttribute{
-				Description: "UID (uuid v4) used by Meilisearch to identify the key.",
+				Description: "UID used by Meilisearch to identify the key.",
 				Optional:    true,
 				Computed:    true,
 				PlanModifiers: []planmodifier.String{
@@ -81,271 +79,379 @@ func (r *keyResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"actions": schema.ListAttribute{
+			"actions": schema.SetAttribute{
 				Description: "Actions permitted for the key.",
 				ElementType: types.StringType,
 				Required:    true,
-				PlanModifiers: []planmodifier.List{
-					listplanmodifier.RequiresReplace(),
+				PlanModifiers: []planmodifier.Set{
+					setplanmodifier.RequiresReplace(),
 				},
 			},
-			"indexes": schema.ListAttribute{
-				Description: "Indexes the key is authorized to act on (with the actions specified in the scope of the key).",
+			"indexes": schema.SetAttribute{
+				Description: "Indexes the key is authorized to act on.",
 				ElementType: types.StringType,
 				Required:    true,
-				PlanModifiers: []planmodifier.List{
-					listplanmodifier.RequiresReplace(),
+				PlanModifiers: []planmodifier.Set{
+					setplanmodifier.RequiresReplace(),
 				},
 			},
 			"expires_at": schema.StringAttribute{
-				Description: "Date and time when the key will expire (RFC3339)",
+				Description: "Optional expiration timestamp (RFC3339). Removing it recreates the key without an expiration.",
 				Optional:    true,
+				Validators: []validator.String{
+					expiresAtValidator{},
+				},
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
 			"created_at": schema.StringAttribute{
-				Description: "Date and time when the key was created (RFC3339)",
+				Description: "Date and time when the key was created (RFC3339).",
 				Computed:    true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"updated_at": schema.StringAttribute{
-				Description: "Date and time when the key was last updated (RFC3339)",
+				Description: "Date and time when the key was last updated (RFC3339).",
 				Computed:    true,
 			},
 			"id": schema.StringAttribute{
-				Description: "Placeholder identifier attribute.",
+				Description: "Remote API key UID.",
 				Computed:    true,
 			},
 		},
 	}
 }
 
-// Configure adds the provider configured client to the resource.
-func (r *keyResource) Configure(ctx context.Context, req resource.ConfigureRequest, _ *resource.ConfigureResponse) {
+func (r *keyResource) Configure(_ context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
 	if req.ProviderData == nil {
 		return
 	}
 
-	var ok bool
+	data, ok := req.ProviderData.(*providerData)
+	if !ok || data == nil || data.client == nil {
+		resp.Diagnostics.AddError(
+			"Invalid provider data",
+			"The Meilisearch key resource requires provider data created by the Meilisearch provider.",
+		)
+		return
+	}
 
-	r.client, ok = req.ProviderData.(meilisearch.ServiceManager)
-
-	if !ok {
-		tflog.Error(ctx, "Type assertion failed when adding configured client to the resource")
+	r.client = data.client
+	r.operationTimeout = data.operationTimeout
+	r.provider = data
+	if r.operationTimeout <= 0 {
+		r.operationTimeout = defaultOperationTimeout
 	}
 }
 
-// Create creates the resource and sets the initial Terraform state.
 func (r *keyResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	// Retrieve values from plan
 	var plan keyResourceModel
-
-	diags := req.Plan.Get(ctx, &plan)
-
-	resp.Diagnostics.Append(diags...)
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if r.client == nil {
+		resp.Diagnostics.AddError("Key resource is not configured", "The Meilisearch provider did not supply a client.")
 		return
 	}
 
 	var actions []string
 	var indexes []string
-	var expiresAt time.Time
-
-	for _, action := range plan.Actions {
-		actions = append(actions, action.ValueString())
+	resp.Diagnostics.Append(plan.Actions.ElementsAs(ctx, &actions, false)...)
+	resp.Diagnostics.Append(plan.Indexes.ElementsAs(ctx, &indexes, false)...)
+	if resp.Diagnostics.HasError() {
+		return
 	}
 
-	for _, index := range plan.Indexes {
-		indexes = append(indexes, index.ValueString())
+	expiresAt, err := parseExpiresAt(plan.ExpiresAt)
+	if err != nil {
+		resp.Diagnostics.AddError("Invalid key expiration", "expires_at must be an RFC3339 timestamp.")
+		return
 	}
 
-	if !plan.ExpiresAt.IsNull() && plan.ExpiresAt.ValueString() != "" {
-		parsedExpiredAt, err := time.Parse(time.RFC3339, plan.ExpiresAt.ValueString())
+	operationCtx, cancel := operationContext(ctx, r.operationTimeout)
+	defer cancel()
 
-		if err != nil {
-			resp.Diagnostics.AddError(
-				"Error creating key",
-				"Could not parse expiresAt attribute",
-			)
-			return
-		}
-
-		expiresAt = parsedExpiredAt
-	}
-
-	createKey := meilisearch.Key{
+	key, err := r.client.CreateKeyWithContext(operationCtx, &meilisearch.Key{
 		UID:         plan.UID.ValueString(),
 		Name:        plan.Name.ValueString(),
 		Description: plan.Description.ValueString(),
 		Actions:     actions,
 		Indexes:     indexes,
 		ExpiresAt:   expiresAt,
-	}
-
-	key, err := r.client.CreateKey(&createKey)
-
+	})
 	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error creating key",
-			"Could not create key, unexpected error: "+err.Error(),
-		)
+		resp.Diagnostics.AddError("Error creating key", "Could not create key: "+apiError(err))
+		return
+	}
+	if key == nil || key.UID == "" {
+		resp.Diagnostics.AddError("Error creating key", "Meilisearch returned no API key UID.")
 		return
 	}
 
-	plan.UID = types.StringValue(key.UID)
-	plan.Key = types.StringValue(key.Key)
-	plan.CreatedAt = types.StringValue(key.CreatedAt.Format(time.RFC3339))
-	plan.UpdatedAt = types.StringValue(key.UpdatedAt.Format(time.RFC3339))
-
-	if plan.ExpiresAt.IsNull() {
-		plan.ExpiresAt = types.StringNull()
-	}
-
-	plan.ID = types.StringValue("placeholder")
-
-	// Set state to fully populated data
-	diags = resp.State.Set(ctx, plan)
+	state, diags := keyResourceState(ctx, key, &plan, true)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
-// Read refreshes the Terraform state with the latest data.
 func (r *keyResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	// Get current state
 	var state keyResourceModel
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
-	diags := req.State.Get(ctx, &state)
+	if r.client == nil {
+		resp.Diagnostics.AddError("Key resource is not configured", "The Meilisearch provider did not supply a client.")
+		return
+	}
 
+	operationCtx, cancel := operationContext(ctx, r.operationTimeout)
+	defer cancel()
+
+	uid := state.UID.ValueString()
+	key, err := r.client.GetKeyWithContext(operationCtx, uid)
+	if err != nil {
+		if isAPIError(err, "api_key_not_found") || isAPIError(err, "key_not_found") {
+			resp.State.RemoveResource(ctx)
+			return
+		}
+
+		resp.Diagnostics.AddError("Error reading Meilisearch API key", "Could not read key "+uid+": "+apiError(err))
+		return
+	}
+	if key == nil || key.UID == "" {
+		resp.Diagnostics.AddError("Error reading Meilisearch API key", "Meilisearch returned no API key UID.")
+		return
+	}
+
+	refreshedState, diags := keyResourceState(ctx, key, &state, false)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	// Get refreshed key value from Meilisearch
-	key, err := r.client.GetKey(state.UID.ValueString())
+	resp.Diagnostics.Append(resp.State.Set(ctx, &refreshedState)...)
+}
+
+func (r *keyResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	var plan keyResourceModel
+	var state keyResourceModel
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if r.client == nil {
+		resp.Diagnostics.AddError("Key resource is not configured", "The Meilisearch provider did not supply a client.")
+		return
+	}
+
+	operationCtx, cancel := operationContext(ctx, r.operationTimeout)
+	defer cancel()
+
+	key, err := r.updateKeyWithContext(operationCtx, state.UID.ValueString(), stringPointer(plan.Name), stringPointer(plan.Description))
 	if err != nil {
-		if strings.Contains(err.Error(), "api_key_not_found,") {
-			resp.State.RemoveResource(ctx)
-			return
-		} else {
-			resp.Diagnostics.AddError(
-				"Error Reading Meilisearch Key",
-				"Could not read Meilisearch key ID "+state.UID.ValueString()+": "+err.Error(),
-			)
+		resp.Diagnostics.AddError("Error updating Meilisearch API key", "Could not update key: "+apiError(err))
+		return
+	}
+	if key == nil || key.UID == "" {
+		key, err = r.client.GetKeyWithContext(operationCtx, state.UID.ValueString())
+		if err != nil {
+			resp.Diagnostics.AddError("Error reading updated Meilisearch API key", "Could not read key "+state.UID.ValueString()+": "+apiError(err))
 			return
 		}
 	}
-
-	// Overwrite items with refreshed state
-	keyState := keyResourceModel{
-		UID:         types.StringValue(key.UID),
-		Name:        types.StringValue(key.Name),
-		Description: types.StringValue(key.Description),
-		Key:         types.StringValue(key.Key),
-		CreatedAt:   types.StringValue(key.CreatedAt.Format(time.RFC3339)),
-		UpdatedAt:   types.StringValue(key.UpdatedAt.Format(time.RFC3339)),
+	if key == nil || key.UID == "" {
+		resp.Diagnostics.AddError("Error updating Meilisearch API key", "Meilisearch returned no API key UID.")
+		return
 	}
 
-	for _, action := range key.Actions {
-		keyState.Actions = append(keyState.Actions, types.StringValue(action))
-	}
-
-	for _, indexes := range key.Indexes {
-		keyState.Indexes = append(keyState.Indexes, types.StringValue(indexes))
-	}
-
-	if key.ExpiresAt.IsZero() {
-		keyState.ExpiresAt = types.StringNull()
-	} else {
-		keyState.ExpiresAt = types.StringValue(key.ExpiresAt.Format(time.RFC3339))
-	}
-
-	state = keyState
-
-	state.ID = types.StringValue("placeholder")
-
-	// Set refreshed state
-	diags = resp.State.Set(ctx, &state)
+	refreshedState, diags := keyResourceState(ctx, key, &plan, true)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, &refreshedState)...)
 }
 
-// Update updates the resource and sets the updated Terraform state on success.
-func (r *keyResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	// Retrieve values from plan
-	var plan keyResourceModel
-
-	diags := req.Plan.Get(ctx, &plan)
-
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	updateKey := meilisearch.Key{
-		Name:        plan.Name.ValueString(),
-		Description: plan.Description.ValueString(),
-	}
-
-	// Update existing key
-	key, err := r.client.UpdateKey(plan.UID.ValueString(), &updateKey)
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error Updating Meilisearch Key",
-			"Could not update key, unexpected error: "+err.Error(),
-		)
-		return
-	}
-
-	plan.UID = types.StringValue(key.UID)
-	plan.Key = types.StringValue(key.Key)
-	plan.CreatedAt = types.StringValue(key.CreatedAt.Format(time.RFC3339))
-	plan.UpdatedAt = types.StringValue(key.UpdatedAt.Format(time.RFC3339))
-
-	if plan.ExpiresAt.IsNull() {
-		plan.ExpiresAt = types.StringNull()
-	}
-
-	plan.ID = types.StringValue("placeholder")
-
-	// Set refreshed state
-	diags = resp.State.Set(ctx, plan)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-}
-
-// Delete deletes the resource and removes the Terraform state on success.
 func (r *keyResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	var state keyResourceModel
-
-	diags := req.State.Get(ctx, &state)
-
-	resp.Diagnostics.Append(diags...)
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	// Delete existing key
-	_, err := r.client.DeleteKey(state.UID.ValueString())
-	if err != nil {
-		resp.Diagnostics.AddError(
-			"Error Deleting Meilisearch Key",
-			"Could not delete key, unexpected error: "+err.Error(),
-		)
+	if r.client == nil {
+		resp.Diagnostics.AddError("Key resource is not configured", "The Meilisearch provider did not supply a client.")
 		return
+	}
+
+	operationCtx, cancel := operationContext(ctx, r.operationTimeout)
+	defer cancel()
+
+	_, err := r.client.DeleteKeyWithContext(operationCtx, state.UID.ValueString())
+	if err != nil && !isAPIError(err, "api_key_not_found") && !isAPIError(err, "key_not_found") {
+		resp.Diagnostics.AddError("Error deleting Meilisearch API key", "Could not delete key "+state.UID.ValueString()+": "+apiError(err))
 	}
 }
 
 func (r *keyResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	// Retrieve import UID and save to id attribute
 	resource.ImportStatePassthroughID(ctx, path.Root("uid"), req, resp)
+}
+
+func parseExpiresAt(value types.String) (time.Time, error) {
+	if value.IsNull() || value.IsUnknown() {
+		return time.Time{}, nil
+	}
+	if value.ValueString() == "" {
+		return time.Time{}, errors.New("expires_at must be a non-empty RFC3339 timestamp")
+	}
+
+	return time.Parse(time.RFC3339, value.ValueString())
+}
+
+type expiresAtValidator struct{}
+
+func (expiresAtValidator) Description(context.Context) string {
+	return "expires_at must be a non-empty RFC3339 timestamp when configured."
+}
+
+func (v expiresAtValidator) MarkdownDescription(ctx context.Context) string {
+	return v.Description(ctx)
+}
+
+func (expiresAtValidator) ValidateString(_ context.Context, req validator.StringRequest, resp *validator.StringResponse) {
+	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
+		return
+	}
+
+	if req.ConfigValue.ValueString() == "" {
+		resp.Diagnostics.AddAttributeError(req.Path, "Invalid key expiration", "expires_at must be a non-empty RFC3339 timestamp when configured.")
+		return
+	}
+
+	if _, err := time.Parse(time.RFC3339, req.ConfigValue.ValueString()); err != nil {
+		resp.Diagnostics.AddAttributeError(req.Path, "Invalid key expiration", "expires_at must be a non-empty RFC3339 timestamp when configured.")
+	}
+}
+
+func keyResourceState(ctx context.Context, key *meilisearch.Key, configured *keyResourceModel, preserveConfiguredScopes bool) (keyResourceModel, diag.Diagnostics) {
+	state := keyResourceModel{
+		UID:         types.StringValue(key.UID),
+		Name:        optionalStringValue(key.Name, configuredString(configured, func(model *keyResourceModel) types.String { return model.Name })),
+		Description: optionalStringValue(key.Description, configuredString(configured, func(model *keyResourceModel) types.String { return model.Description })),
+		CreatedAt:   timestampValue(key.CreatedAt),
+		UpdatedAt:   timestampValue(key.UpdatedAt),
+		ExpiresAt:   expiresAtValue(key.ExpiresAt, configuredString(configured, func(model *keyResourceModel) types.String { return model.ExpiresAt })),
+		ID:          types.StringValue(key.UID),
+	}
+
+	if key.Key != "" {
+		state.Key = types.StringValue(key.Key)
+	} else if configured != nil && !configured.Key.IsNull() && !configured.Key.IsUnknown() {
+		state.Key = configured.Key
+	} else {
+		state.Key = types.StringNull()
+	}
+
+	scopes := types.SetNull(types.StringType)
+	if preserveConfiguredScopes {
+		scopes = configuredSet(configured, func(model *keyResourceModel) types.Set { return model.Actions })
+	}
+	actions, diags := keySetValue(ctx, key.Actions, scopes)
+	state.Actions = actions
+	allDiags := diags
+
+	if preserveConfiguredScopes {
+		scopes = configuredSet(configured, func(model *keyResourceModel) types.Set { return model.Indexes })
+	} else {
+		scopes = types.SetNull(types.StringType)
+	}
+	indexes, diags := keySetValue(ctx, key.Indexes, scopes)
+	state.Indexes = indexes
+	allDiags.Append(diags...)
+
+	return state, allDiags
+}
+
+func configuredString(model *keyResourceModel, get func(*keyResourceModel) types.String) types.String {
+	if model == nil {
+		return types.StringNull()
+	}
+
+	return get(model)
+}
+
+func configuredSet(model *keyResourceModel, get func(*keyResourceModel) types.Set) types.Set {
+	if model == nil {
+		return types.SetNull(types.StringType)
+	}
+
+	return get(model)
+}
+
+func optionalStringValue(remote string, configured types.String) types.String {
+	if remote != "" {
+		return types.StringValue(remote)
+	}
+	if !configured.IsNull() && !configured.IsUnknown() && configured.ValueString() == "" {
+		return configured
+	}
+
+	return types.StringNull()
+}
+
+func stringPointer(value types.String) *string {
+	if value.IsNull() || value.IsUnknown() {
+		return nil
+	}
+
+	stringValue := value.ValueString()
+	return &stringValue
+}
+
+func timestampValue(value time.Time) types.String {
+	if value.IsZero() {
+		return types.StringNull()
+	}
+
+	return types.StringValue(value.Format(time.RFC3339))
+}
+
+func expiresAtValue(remote time.Time, configured types.String) types.String {
+	if remote.IsZero() {
+		return types.StringNull()
+	}
+
+	if !configured.IsNull() && !configured.IsUnknown() && configured.ValueString() != "" {
+		if parsed, err := time.Parse(time.RFC3339, configured.ValueString()); err == nil && parsed.Equal(remote) {
+			return configured
+		}
+	}
+
+	return types.StringValue(remote.Format(time.RFC3339))
+}
+
+func keySetValue(ctx context.Context, remote []string, configured types.Set) (types.Set, diag.Diagnostics) {
+	if remote == nil && !configured.IsNull() && !configured.IsUnknown() {
+		var fallback []string
+		diags := configured.ElementsAs(ctx, &fallback, false)
+		if diags.HasError() {
+			return types.SetNull(types.StringType), diags
+		}
+
+		remote = fallback
+	}
+
+	return types.SetValueFrom(ctx, types.StringType, remote)
 }

@@ -3,12 +3,12 @@
 page_title: "meilisearch_index Resource - meilisearch"
 subcategory: ""
 description: |-
-  Manages a Meilisearch Index.
+  Manages a Meilisearch index.
 ---
 
 # meilisearch_index (Resource)
 
-Manages a Meilisearch Index.
+Manages a Meilisearch index.
 
 ## Example Usage
 
@@ -25,18 +25,23 @@ resource "meilisearch_index" "example" {
 
 ### Required
 
-- `primary_key` (String) Primary key of the index (`null` if not specified and if no documents have been added yet, see [official documentation](https://www.meilisearch.com/docs/learn/core_concepts/primary_key#meilisearch-guesses-your-primary-key) for more details).
 - `uid` (String) Unique identifier of the index.
+
+### Optional
+
+- `primary_key` (String) Primary key of the index. If omitted, Meilisearch chooses it when the first document is added.
 
 ### Read-Only
 
-- `created_at` (String) Date and time when the key was created (RFC3339)
-- `id` (String) Placeholder identifier attribute.
-- `updated_at` (String) Date and time when the key was last updated (RFC3339)
+- `created_at` (String) Date and time when the index was created (RFC3339).
+- `id` (String) Remote index UID.
+- `updated_at` (String) Date and time when the index was last updated (RFC3339).
 
 ## Import
 
 Import is supported using the following syntax:
+
+The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
 
 ```shell
 # Index can be imported by specifying the UID used by Meilisearch.

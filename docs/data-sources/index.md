@@ -28,7 +28,7 @@ data "meilisearch_index" "example" {
 
 ### Read-Only
 
-- `created_at` (String) Date and time when the key was created (RFC3339)
-- `id` (String) Placeholder identifier attribute.
+- `created_at` (String) Date and time when the index was created (RFC3339)
+- `id` (String) Unique identifier of the index.
 - `primary_key` (String) Primary key of the index (`null` if not specified and if no documents have been added yet, see [official documentation](https://www.meilisearch.com/docs/learn/core_concepts/primary_key#meilisearch-guesses-your-primary-key) for more details).
-- `updated_at` (String) Date and time when the key was last updated (RFC3339)
+- `updated_at` (String) Date and time when the index was last updated (RFC3339)

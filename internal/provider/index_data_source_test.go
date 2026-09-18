@@ -21,8 +21,7 @@ data "meilisearch_index" "test" {
 					// Verify all attributes are set
 					resource.TestCheckResourceAttr("data.meilisearch_index.test", "uid", "test_index"),
 					resource.TestCheckResourceAttr("data.meilisearch_index.test", "primary_key", "test_id"),
-					// Verify ID placeholder attribute is set
-					resource.TestCheckResourceAttr("data.meilisearch_index.test", "id", "placeholder"),
+					resource.TestCheckResourceAttr("data.meilisearch_index.test", "id", "test_index"),
 				),
 			},
 			// Read testing when no primary key is specified
@@ -36,8 +35,7 @@ data "meilisearch_index" "test" {
 					// Verify all attributes are set
 					resource.TestCheckResourceAttr("data.meilisearch_index.test", "uid", "test_index_no_primary_key"),
 					resource.TestCheckNoResourceAttr("data.meilisearch_index.test", "primary_key"),
-					// Verify ID placeholder attribute is set
-					resource.TestCheckResourceAttr("data.meilisearch_index.test", "id", "placeholder"),
+					resource.TestCheckResourceAttr("data.meilisearch_index.test", "id", "test_index_no_primary_key"),
 				),
 			},
 		},

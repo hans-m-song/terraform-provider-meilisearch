@@ -22,16 +22,15 @@ data "meilisearch_key" "test" {
 					resource.TestCheckResourceAttr("data.meilisearch_key.test", "uid", "11111111-2222-3333-4444-555555555555"),
 					resource.TestCheckResourceAttr("data.meilisearch_key.test", "name", "test_api_key"),
 					resource.TestCheckResourceAttr("data.meilisearch_key.test", "description", "Test API key"),
-					resource.TestCheckResourceAttr("data.meilisearch_key.test", "expires_at", "2042-04-02 00:42:42 +0000 UTC"),
+					resource.TestCheckResourceAttr("data.meilisearch_key.test", "expires_at", "2042-04-02T00:42:42Z"),
 					// Verifiy number and values of actions
 					resource.TestCheckResourceAttr("data.meilisearch_key.test", "actions.#", "1"),
-					resource.TestCheckResourceAttr("data.meilisearch_key.test", "actions.0", "documents.add"),
+					resource.TestCheckTypeSetElemAttr("data.meilisearch_key.test", "actions.*", "documents.add"),
 					// Verifiy number and values of indexes
 					resource.TestCheckResourceAttr("data.meilisearch_key.test", "indexes.#", "2"),
-					resource.TestCheckResourceAttr("data.meilisearch_key.test", "indexes.0", "products"),
-					resource.TestCheckResourceAttr("data.meilisearch_key.test", "indexes.1", "users"),
-					// Verify ID placeholder attribute is set
-					resource.TestCheckResourceAttr("data.meilisearch_key.test", "id", "placeholder"),
+					resource.TestCheckTypeSetElemAttr("data.meilisearch_key.test", "indexes.*", "products"),
+					resource.TestCheckTypeSetElemAttr("data.meilisearch_key.test", "indexes.*", "users"),
+					resource.TestCheckResourceAttr("data.meilisearch_key.test", "id", "11111111-2222-3333-4444-555555555555"),
 				),
 			},
 		},

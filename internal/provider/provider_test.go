@@ -6,10 +6,13 @@ import (
 )
 
 const (
+	testHost   = "http://localhost:17700"
+	testAPIKey = "T35T-M45T3R-K3Y"
+
 	providerConfig = `
 provider "meilisearch" {
-  host 		= "http://localhost:7700"
-  api_key = "T35T-M45T3R-K3Y"
+  host     = "` + testHost + `"
+  api_key  = "` + testAPIKey + `"
 }
 `
 )

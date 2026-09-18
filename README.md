@@ -1,10 +1,12 @@
 # Terraform Provider for Meilisearch.
 
-[![Release](https://img.shields.io/github/v/release/paulden/terraform-provider-meilisearch)](https://github.com/paulden/terraform-provider-meilisearch/releases)
-[![Registry](https://img.shields.io/badge/registry-doc%40latest-lightgrey?logo=terraform)](https://registry.terraform.io/providers/paulden/meilisearch/latest/docs)
-[![License](https://img.shields.io/badge/license-Mozilla-blue.svg)](https://github.com/paulden/terraform-provider-meilisearch/blob/main/LICENSE)
+[![Release](https://img.shields.io/github/v/release/hans-m-song/terraform-provider-meilisearch)](https://github.com/hans-m-song/terraform-provider-meilisearch/releases)
+[![Registry](https://img.shields.io/badge/registry-doc%40latest-lightgrey?logo=terraform)](https://registry.terraform.io/providers/hans-m-song/meilisearch/latest/docs)
+[![License](https://img.shields.io/badge/license-Mozilla-blue.svg)](https://github.com/hans-m-song/terraform-provider-meilisearch/blob/main/LICENSE)
 
 This Terraform provider implements resource management for Meilisearch.
+
+The modernization changes in this workspace are unreleased. See [the roadmap](docs/roadmap.md) for delivery status and [migration notes](docs/migration.md) for behavior changes. The supported baseline is Terraform 1.14+; newer server API coverage takes priority over legacy resource compatibility.
 
 ## Overview
 
@@ -14,10 +16,11 @@ To use this provider, you must install it and provide authentication credentials
 
 ```hcl
 terraform {
+  required_version = ">= 1.14.0"
+
   required_providers {
     meilisearch = {
-      source = "paulden/meilisearch"
-      version = "0.0.1"
+      source = "hans-m-song/meilisearch"
     }
   }
 }
@@ -29,17 +32,18 @@ provider "meilisearch" {
 ```
 
 Alternatively, you may use environment variables `MEILISEARCH_API_KEY` and / or `MEILISEARCH_HOST` for authentication.
-The `MEILISEARCH_API_KEY` should have admin privileges since it may be used to create all kinds of resources.
+Use an API key with permissions for the operations you manage. Credentials supplied in Terraform configuration can be marked sensitive and still be stored in state. `operation_timeout` accepts a positive Go duration and defaults to `"5m"`; it covers API requests and asynchronous task completion.
 
 ### Resources
 
-- `meilisearch_api_key`: create and manage API keys for Meilisearch.
+- `meilisearch_key`: create and manage API keys for Meilisearch.
 - `meilisearch_index`: create and manage an index in Meilisearch.
 
 ### Data sources
 
-- `meilisearch_api_key`: read API keys for Meilisearch.
+- `meilisearch_key`: read API keys for Meilisearch.
 - `meilisearch_index`: read a Meilisearch index.
+- `meilisearch_version`: read the server version.
 
 ## Development
 
@@ -47,9 +51,10 @@ _This template repository is built on the [Terraform Plugin Framework](https://g
 
 ### Requirements
 
-- [Terraform](https://www.terraform.io/downloads.html) >= 1.0
-- [Go](https://golang.org/doc/install) >= 1.23
-- [Docker](https://docs.docker.com/engine/install/) and [docker-compose](https://docs.docker.com/compose/install/) >= 3.7 for development
+- [Terraform](https://www.terraform.io/downloads.html) >= 1.14
+- [Go](https://golang.org/doc/install) >= 1.25.8 (preferred toolchain: 1.27.1)
+- [Docker](https://docs.docker.com/engine/install/) for disposable acceptance servers
+- `curl` and `jq` for synthetic acceptance-fixture setup
 - [golangci-lint](https://golangci-lint.run/usage/install/) for development
 
 ### Building The Provider
@@ -86,7 +91,7 @@ Don't forget that if you want to use a local binary for a Terraform provider, yo
 ```
 provider_installation {
   dev_overrides {
-      "terraform.io/paulden/meilisearch" = "<replace/with/your/gopath/bin>"
+      "registry.terraform.io/hans-m-song/meilisearch" = "<replace/with/your/gopath/bin>"
   }
 
   direct {}
@@ -99,7 +104,7 @@ before using it in a `.tf` file such as:
 terraform {
   required_providers {
     meilisearch = {
-      source = "terraform.io/paulden/meilisearch"
+      source = "hans-m-song/meilisearch"
     }
   }
 }
@@ -113,11 +118,15 @@ In order to run the full suite of Acceptance tests, run `make testacc`.
 make testacc
 ```
 
-Tests are run against a Meilisearch Docker container to ease development (see `docker_compose/` folder). The task will:
-- Start a Docker container running a Meilisearch instance
-- Seed data on the Meilisearch instance
-- Run Terraform tests from the provider
-- Clean up Docker volume
+Acceptance tests use `scripts/test-acceptance.sh` to start a disposable Meilisearch v1.53.2 server, wait for readiness, seed synthetic fixtures, run Terraform tests, and clean up that server. The harness does not reuse existing Meilisearch data or delete workspace Terraform state. See the script's usage for the exact endpoint and Terraform binary selection.
+
+For unit tests and build checks:
+
+```shell
+go test ./...
+go vet ./...
+go build ./...
+```
 
 ### Run linter
 
@@ -130,5 +139,5 @@ golangci-lint run
 Or using Docker:
 
 ```shell
-docker run --rm -v $(pwd):/app -w /app golangci/golangci-lint:v1.52.2 golangci-lint run
+docker run --rm --volume "$(pwd):/app" --workdir /app golangci/golangci-lint:v2.13.2 golangci-lint run
 ```

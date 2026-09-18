@@ -3,12 +3,12 @@
 page_title: "meilisearch_key Data Source - meilisearch"
 subcategory: ""
 description: |-
-  Manages a Meilisearch API key.
+  Retrieves a Meilisearch API key. The credential is sensitive but is stored in Terraform state.
 ---
 
 # meilisearch_key (Data Source)
 
-Manages a Meilisearch API key.
+Retrieves a Meilisearch API key. The credential is sensitive but is stored in Terraform state.
 
 ## Example Usage
 
@@ -28,12 +28,12 @@ data "meilisearch_key" "example" {
 
 ### Read-Only
 
-- `actions` (List of String) Actions permitted for the key.
+- `actions` (Set of String) Actions permitted for the key.
 - `created_at` (String) Date and time when the key was created (RFC3339)
 - `description` (String) Description of the key.
 - `expires_at` (String) Date and time when the key will expire (RFC3339)
-- `id` (String) Placeholder identifier attribute.
-- `indexes` (List of String) Indexes the key is authorized to act on (with the actions specified in the scope of the key).
-- `key` (String) Actual key value.
+- `id` (String) Unique identifier of the API key.
+- `indexes` (Set of String) Indexes the key is authorized to act on (with the actions specified in the scope of the key).
+- `key` (String, Sensitive) Actual key value.
 - `name` (String) Name of the key.
 - `updated_at` (String) Date and time when the key was last updated (RFC3339)

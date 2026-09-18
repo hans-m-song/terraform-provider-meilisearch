@@ -22,6 +22,7 @@ resource "meilisearch_index" "test" {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					// Verify all attributes are set
 					resource.TestCheckResourceAttr("meilisearch_index.test", "uid", "index-uid"),
+					resource.TestCheckResourceAttr("meilisearch_index.test", "id", "index-uid"),
 					resource.TestCheckResourceAttr("meilisearch_index.test", "primary_key", "index-primary-key"),
 					// Verify dynamic values have any value set in the state.
 					resource.TestCheckResourceAttrSet("meilisearch_index.test", "created_at"),
@@ -37,7 +38,7 @@ resource "meilisearch_index" "test" {
 `,
 				ConfigPlanChecks: resource.ConfigPlanChecks{
 					PreApply: []plancheck.PlanCheck{
-						plancheck.ExpectResourceAction("meilisearch_index.test", "Replace"),
+						plancheck.ExpectResourceAction("meilisearch_index.test", "Update"),
 					},
 				},
 				Check: resource.ComposeAggregateTestCheckFunc(
@@ -61,11 +62,10 @@ resource "meilisearch_index" "test" {
 				),
 			},
 			{
-				ResourceName:            "meilisearch_index.test",
-				ImportStateId:           "updated-index-uid",
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateVerifyIgnore: []string{"id"},
+				ResourceName:      "meilisearch_index.test",
+				ImportStateId:     "updated-index-uid",
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})

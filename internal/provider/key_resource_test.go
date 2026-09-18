@@ -9,7 +9,7 @@ import (
 )
 
 func TestAccKeyResource(t *testing.T) {
-	client := meilisearch.New("http://localhost:7700", meilisearch.WithAPIKey("T35T-M45T3R-K3Y"))
+	client := meilisearch.New(testHost, meilisearch.WithAPIKey(testAPIKey))
 
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: testAccProtoV6ProviderFactories,
@@ -34,11 +34,11 @@ resource "meilisearch_key" "test" {
 					resource.TestCheckResourceAttr("meilisearch_key.test", "expires_at", "2042-04-02T00:42:42Z"),
 					// Verifiy number and values of actions
 					resource.TestCheckResourceAttr("meilisearch_key.test", "actions.#", "1"),
-					resource.TestCheckResourceAttr("meilisearch_key.test", "actions.0", "search"),
+					resource.TestCheckTypeSetElemAttr("meilisearch_key.test", "actions.*", "search"),
 					// Verifiy number and values of indexes
 					resource.TestCheckResourceAttr("meilisearch_key.test", "indexes.#", "2"),
-					resource.TestCheckResourceAttr("meilisearch_key.test", "indexes.0", "test_index_1"),
-					resource.TestCheckResourceAttr("meilisearch_key.test", "indexes.1", "test_index_2"),
+					resource.TestCheckTypeSetElemAttr("meilisearch_key.test", "indexes.*", "test_index_1"),
+					resource.TestCheckTypeSetElemAttr("meilisearch_key.test", "indexes.*", "test_index_2"),
 					// Verify dynamic values have any value set in the state.
 					resource.TestCheckResourceAttrSet("meilisearch_key.test", "key"),
 					resource.TestCheckResourceAttrSet("meilisearch_key.test", "created_at"),
@@ -73,23 +73,48 @@ resource "meilisearch_key" "test" {
 					resource.TestCheckResourceAttr("meilisearch_key.test", "expires_at", "2042-04-02T00:42:42Z"),
 					// Verifiy number and values of actions
 					resource.TestCheckResourceAttr("meilisearch_key.test", "actions.#", "1"),
-					resource.TestCheckResourceAttr("meilisearch_key.test", "actions.0", "search"),
+					resource.TestCheckTypeSetElemAttr("meilisearch_key.test", "actions.*", "search"),
 					// Verifiy number and values of indexes
 					resource.TestCheckResourceAttr("meilisearch_key.test", "indexes.#", "2"),
-					resource.TestCheckResourceAttr("meilisearch_key.test", "indexes.0", "test_index_1"),
-					resource.TestCheckResourceAttr("meilisearch_key.test", "indexes.1", "test_index_2"),
+					resource.TestCheckTypeSetElemAttr("meilisearch_key.test", "indexes.*", "test_index_1"),
+					resource.TestCheckTypeSetElemAttr("meilisearch_key.test", "indexes.*", "test_index_2"),
 					// Verify dynamic values have any value set in the state.
 					resource.TestCheckResourceAttrSet("meilisearch_key.test", "key"),
 					resource.TestCheckResourceAttrSet("meilisearch_key.test", "created_at"),
 					resource.TestCheckResourceAttrSet("meilisearch_key.test", "updated_at"),
 				),
 			},
+			{
+				Config: providerConfig + `
+resource "meilisearch_key" "test" {
+	uid = "66666666-7777-8888-9999-000000000000"
+	actions = ["search"]
+  indexes = ["test_index_1", "test_index_2"]
+	expires_at = "2042-04-02T00:42:42Z"
+}
+`,
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction("meilisearch_key.test", "Update"),
+					},
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckNoResourceAttr("meilisearch_key.test", "name"),
+					resource.TestCheckNoResourceAttr("meilisearch_key.test", "description"),
+				),
+			},
 			// Re-creating the key deleted outside of Terraform testing
 			{
 				PreConfig: func() {
-					_, err := client.DeleteKey("66666666-7777-8888-9999-000000000000")
+					_, err := client.GetKey("66666666-7777-8888-9999-000000000000")
 					if err != nil {
+						if !isAPIError(err, "api_key_not_found") && !isAPIError(err, "key_not_found") {
+							t.Fatalf("check existing API key: %v", err)
+						}
 						return
+					}
+					if _, err := client.DeleteKey("66666666-7777-8888-9999-000000000000"); err != nil {
+						t.Fatalf("delete existing API key: %v", err)
 					}
 				},
 				Config: providerConfig + `

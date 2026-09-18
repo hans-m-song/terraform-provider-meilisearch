@@ -2,12 +2,12 @@ package provider
 
 import (
 	"context"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/meilisearch/meilisearch-go"
 )
 
@@ -23,7 +23,8 @@ func NewIndexDataSource() datasource.DataSource {
 
 // indexDataSource defines the data source implementation.
 type indexDataSource struct {
-	client meilisearch.ServiceManager
+	client           meilisearch.ServiceManager
+	operationTimeout time.Duration
 }
 
 type indexDataSourceModel struct {
@@ -51,15 +52,15 @@ func (d *indexDataSource) Schema(ctx context.Context, req datasource.SchemaReque
 				Computed:    true,
 			},
 			"created_at": schema.StringAttribute{
-				Description: "Date and time when the key was created (RFC3339)",
+				Description: "Date and time when the index was created (RFC3339)",
 				Computed:    true,
 			},
 			"updated_at": schema.StringAttribute{
-				Description: "Date and time when the key was last updated (RFC3339)",
+				Description: "Date and time when the index was last updated (RFC3339)",
 				Computed:    true,
 			},
 			"id": schema.StringAttribute{
-				Description: "Placeholder identifier attribute.",
+				Description: "Unique identifier of the index.",
 				Computed:    true,
 			},
 		},
@@ -79,20 +80,24 @@ func (d *indexDataSource) Read(ctx context.Context, req datasource.ReadRequest, 
 		return
 	}
 
-	index, err := d.client.GetIndex(identifier.ValueString())
+	ctx, cancel := operationContext(ctx, d.operationTimeout)
+	defer cancel()
+
+	index, err := d.client.GetIndexWithContext(ctx, identifier.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError(
 			"Unable to Read Meilisearch index",
-			err.Error(),
+			apiError(err),
 		)
 		return
 	}
 
 	// Map response body to model
 	indexState := indexDataSourceModel{
-		UID:       types.StringValue(index.UID),
-		CreatedAt: types.StringValue(index.CreatedAt.String()),
-		UpdatedAt: types.StringValue(index.UpdatedAt.String()),
+		UID:        types.StringValue(index.UID),
+		PrimaryKey: types.StringNull(),
+		CreatedAt:  types.StringValue(index.CreatedAt.Format(time.RFC3339)),
+		UpdatedAt:  types.StringValue(index.UpdatedAt.Format(time.RFC3339)),
 	}
 
 	if index.PrimaryKey != "" {
@@ -101,7 +106,7 @@ func (d *indexDataSource) Read(ctx context.Context, req datasource.ReadRequest, 
 
 	state = indexState
 
-	state.ID = types.StringValue("placeholder")
+	state.ID = types.StringValue(index.UID)
 
 	// Set state
 	diags = resp.State.Set(ctx, &state)
@@ -112,16 +117,17 @@ func (d *indexDataSource) Read(ctx context.Context, req datasource.ReadRequest, 
 }
 
 // Configure adds the provider configured client to the data source.
-func (d *indexDataSource) Configure(ctx context.Context, req datasource.ConfigureRequest, _ *datasource.ConfigureResponse) {
+func (d *indexDataSource) Configure(_ context.Context, req datasource.ConfigureRequest, resp *datasource.ConfigureResponse) {
 	if req.ProviderData == nil {
 		return
 	}
 
-	var ok bool
-
-	d.client, ok = req.ProviderData.(meilisearch.ServiceManager)
-
-	if !ok {
-		tflog.Error(ctx, "Type assertion failed when adding configured client to the data source")
+	data, ok := req.ProviderData.(*providerData)
+	if !ok || data == nil || data.client == nil {
+		resp.Diagnostics.AddError("Invalid provider configuration", "Expected a configured Meilisearch client. Report this provider implementation error.")
+		return
 	}
+
+	d.client = data.client
+	d.operationTimeout = data.operationTimeout
 }
