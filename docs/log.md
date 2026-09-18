@@ -126,3 +126,9 @@ The user reported completing signing-secret setup and authorized committing and 
 - User authorized publication on 2026-09-18. Preparing v0.4.0 for the additive core index-settings feature and previously unreleased automation repairs. GitHub Tests run 35340100066 passed for b364d06. Release workflow and Registry ingestion must be verified after tag publication.
 
 - User selected v0.3.1 instead of v0.4.0 before any new tag was created or pushed. Release notes corrected accordingly; the earlier local preparation commit is retained in history.
+
+- v0.3.1 annotated tag and main were pushed atomically at release commit 1bd95af. Both Tests runs 35340710284 and 35340710366 succeeded. Release run 35340710362 imported the GPG key successfully and is building artifacts. Registry versions endpoint returned 0.3.0; v0.3.1 ingestion is not yet established. No v0.4.0 tag was created.
+
+- GitHub Release run 35340710362 succeeded for v0.3.1. The non-draft/non-prerelease GitHub release contains 13 platform archives, the protocol manifest, SHA256SUMS and its GPG signature. Registry ingestion remains pending at the first post-release check.
+
+- v0.3.1 publication completed on 2026-09-18. The fresh Terraform Registry versions response lists 0.3.1; the initial versions response was cached. An isolated Terraform installation pinned to hans-m-song/meilisearch 0.3.1 completed init and index-settings configuration validation with exit 0. No apply or server access was performed; temporary installation/configuration were removed. GitHub release assets and signature are present; Release run 35340710362 and both Tests runs succeeded.

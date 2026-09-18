@@ -1,6 +1,6 @@
 # Provider migration and adoption notes
 
-The M-01 modernization changes are included in the v0.3.0 tag pushed on 2026-09-18. Core index settings are included in the v0.3.1 release. Upstream correctness takes priority over legacy compatibility. The release workflow completed successfully; Terraform Registry publication remains unverified. Verification evidence and completion status are in [roadmap](roadmap.md).
+The M-01 modernization changes are included in the v0.3.0 tag pushed on 2026-09-18. Core index settings are included in the v0.3.1 release. Upstream correctness takes priority over legacy compatibility. The release workflow completed successfully; Terraform Registry publication and installation of v0.3.1 were verified on 2026-09-18. Verification evidence and completion status are in [roadmap](roadmap.md).
 
 ## Core index settings adoption
 

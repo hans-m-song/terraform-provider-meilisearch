@@ -6,7 +6,7 @@
 
 This Terraform provider implements resource management for Meilisearch.
 
-Core index-settings changes in this workspace are unreleased. See [the roadmap](docs/roadmap.md) for delivery status and [migration notes](docs/migration.md) for behavior changes. The supported baseline is Terraform 1.14+; newer server API coverage takes priority over legacy resource compatibility.
+Core index settings are available in v0.3.1. See [the roadmap](docs/roadmap.md) for delivery status and [migration notes](docs/migration.md) for behavior changes. The supported baseline is Terraform 1.14+; newer server API coverage takes priority over legacy resource compatibility.
 
 ## Overview
 

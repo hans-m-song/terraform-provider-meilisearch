@@ -2,7 +2,7 @@
 
 Updated 2026-09-18.
 
-M-01 modernization, T-17 automation repair and M-02/T-04 core index settings are implemented and verified. The user authorized committing and pushing the verified M-02 source, tests, examples and documentation on 2026-09-18. The user subsequently authorized publication; v0.3.1 release preparation is underway. Verify the tag-triggered Release workflow and Registry ingestion.
+M-01 modernization, T-17 automation repair and M-02/T-04 core index settings are implemented and verified. The user authorized committing and pushing the verified M-02 source, tests, examples and documentation on 2026-09-18. The user subsequently authorized publication; v0.3.1 was pushed at 1bd95af. Both Tests runs succeeded; Release run 35340710362 succeeded and signed assets are published. Registry listing, direct Terraform installation and index-settings configuration validation passed on 2026-09-18.
 
 ## Completed core settings
 
@@ -24,7 +24,7 @@ Final acceptance logs: /Volumes/Data/tmp/t04-final5-acceptance-1.14.9.log and /V
 
 Framework 1.19.0, plugin-go 0.31.0, plugin-log 0.11.0, plugin-testing 1.16.0, plugin-docs 0.25.0 and Meilisearch Go SDK 0.36.3. Build requires Go 1.25.8; preferred toolchain 1.27.1. Terraform minimum is provider-wide 1.14+, with upstream correctness prioritized over legacy compatibility.
 
-GitHub/Registry namespace is hans-m-song/meilisearch. M-01 commit 1986202 was pushed and tagged v0.3.0; the tag remains there. Its Release workflow succeeded, while the original tagged Tests run failed cleanup after tests passed. T-17 repair commit a488c6c and documentation checkpoint 0441007 were subsequently pushed; Tests run 35332506179 passed all jobs including acceptance cleanup. Registry publication remains unverified; no follow-up release tag was created.
+GitHub/Registry namespace is hans-m-song/meilisearch. M-01 commit 1986202 was pushed and tagged v0.3.0; the tag remains there. Its Release workflow succeeded, while the original tagged Tests run failed cleanup after tests passed. T-17 repair commit a488c6c and documentation checkpoint 0441007 were subsequently pushed; Tests run 35332506179 passed all jobs including acceptance cleanup. The Registry listed 0.3.0 during the v0.3.1 publication check. v0.3.1 is now tagged at 1bd95af and its GitHub Release workflow succeeded; Registry publication and direct Terraform installation/configuration validation were verified on 2026-09-18.
 
 ## Next decisions
 

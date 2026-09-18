@@ -125,7 +125,7 @@ Status: complete on 2026-09-18; local checks and GitHub Tests run 35332506179 pa
 - Acceptance: successful tests produce a successful harness exit; failed tests retain their failure status; isolated temporary data is removed; shared caches remain untouched.
 - Verification gates: shell/YAML checks, deterministic harness success/failure checks, local acceptance and independent audit.
 - Verification evidence: independent YAML/pin/signing-reference checks, mocked full harness and read-only cleanup exit-status tests passed; full live acceptance passed on Terraform 1.15.8/Meilisearch 1.53.2 with default owned caches, exit zero and no remnants. Source audit clean.
-- Blockers: none for this repair; GitHub acceptance/cleanup passed on both matrix versions. Registry publication remains unverified.
+- Blockers: none for this repair; GitHub acceptance/cleanup passed on both matrix versions. Registry publication and installation of v0.3.1 were verified on 2026-09-18.
 - Parallel boundaries: workflows and scripts/test-acceptance.sh exclusively owned by executor; docs owned by main.
 
 ## M-02 — Core index settings can be managed declaratively
