@@ -2,7 +2,7 @@
 
 Updated 2026-09-18.
 
-T-17 is locally verified: upstream action updates and isolated-cache cleanup repair passed independent YAML/pin/signing-reference checks, mocked success/failure/shared-cache checks and a live full acceptance run with default owned caches. Commit/push is authorized; check the follow-up GitHub Tests run after push. Commit 1986202 and v0.3.0 are already pushed; keep the tag unchanged. The original Tests run passed both suites before cleanup failed; the original Release run completed successfully. Registry publication is unverified.
+T-17 is complete: source commit a488c6c was pushed, and GitHub Tests run 35332506179 passed build/lint/unit/vet/generation and acceptance/cleanup on Terraform 1.14.9/1.16.3. Independent mocked cleanup/shared-cache cases and local full acceptance also passed. The v0.3.0 tag remains at 1986202. The original tagged Tests run failed cleanup after successful tests; its Release run completed successfully. Registry publication remains unverified; no follow-up release tag was created.
 
 ## Completed
 

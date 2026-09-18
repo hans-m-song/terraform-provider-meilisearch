@@ -78,4 +78,8 @@ T-17's full local acceptance suite passed on installed Terraform 1.15.8 with Mei
 
 Independent T-17 verification subsequently passed workflow YAML/pins/signing references, full mocked harness success and failure (exit 23 retained), shared-cache preservation, read-only cleanup (0/7 retained) and injected cleanup failure diagnostics. Main additionally verified cleanup failure maps success to exit 1 while retaining exit 7. The independent final scope audit found no defect. Verification artifacts are isolated under /Volumes/Data/tmp/t17-workflow-verification. The approved follow-up is ready for commit/push; remote CI outcome is checked afterward.
 
+Source commit a488c6c was pushed to main. [GitHub Tests run 35332506179](https://github.com/hans-m-song/terraform-provider-meilisearch/actions/runs/35332506179) completed successfully, including both Terraform matrix acceptance jobs and cleanup. No release tag was moved or added. Registry publication remains unverified.
+
+The authorized T-17 completion notification command succeeded. Final documentation records the verified remote result in a separate follow-up checkpoint.
+
 The user reported completing signing-secret setup and authorized committing and pushing the verified workspace changes. Secret values were not inspected. Release tagging and provider publication were not requested. The pre-commit worktree inventory contains the intended source, test, documentation and automation files; no exported private-key file appears in that inventory.
