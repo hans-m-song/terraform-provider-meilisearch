@@ -2,7 +2,7 @@
 
 Updated 2026-09-18.
 
-M-01 modernization, T-17 automation repair and M-02/T-04 core index settings are implemented and verified. The user authorized committing and pushing the verified M-02 source, tests, examples and documentation on 2026-09-18. No new release tag was requested.
+M-01 modernization, T-17 automation repair and M-02/T-04 core index settings are implemented and verified. The user authorized committing and pushing the verified M-02 source, tests, examples and documentation on 2026-09-18. The user subsequently authorized publication; v0.4.0 release preparation is underway. Verify the tag-triggered Release workflow and Registry ingestion.
 
 ## Completed core settings
 

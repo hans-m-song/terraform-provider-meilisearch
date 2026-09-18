@@ -1,4 +1,4 @@
-## Unreleased
+## 0.4.0
 
 - Add core index-settings resource and data source, field ownership, server-default resets and UID import.
 - Update workflow actions to current Framework scaffolding pins and explicitly select Terraform for documentation generation.
